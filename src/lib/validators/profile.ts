@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { FILE_UPLOAD } from "@/lib/utils/constants";
+
 // Validation schema for updating user profile
 export const updateProfileSchema = z.object({
 	name: z
@@ -13,11 +15,14 @@ export const avatarUploadSchema = z.object({
 	file: z
 		.instanceof(File)
 		.refine(
-			(file) => file.size <= 5 * 1024 * 1024,
+			(file) => file.size <= FILE_UPLOAD.MAX_SIZE_BYTES,
 			"File size must be less than 5MB",
 		)
 		.refine(
-			(file) => ["image/jpeg", "image/png", "image/webp"].includes(file.type),
+			(file) =>
+				(FILE_UPLOAD.ALLOWED_IMAGE_TYPES as readonly string[]).includes(
+					file.type,
+				),
 			"File must be a JPEG, PNG, or WebP image",
 		),
 });

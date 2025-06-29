@@ -1,19 +1,23 @@
 "use server";
 
-import { env } from "cloudflare:workers";
-
 import { desc, eq } from "drizzle-orm";
-import { renderRealtimeClients } from "rwsdk/realtime/worker";
 import { requestInfo } from "rwsdk/worker";
 
 import { db } from "@/db";
 import { user } from "@/db/schema/auth-schema";
 import type { GuestBookMessage } from "@/db/schema/guestbook-schema";
 import { guestbook_message } from "@/db/schema/guestbook-schema";
+import { DB_LIMITS } from "@/lib/utils/constants";
+import { REALTIME_KEYS, triggerRealtimeUpdate } from "@/lib/utils/realtime";
 import {
 	completeOnboardingSchema,
 	createMessageSchema,
 } from "@/lib/validators/guestbook";
+import type {
+	CompleteOnboardingInput,
+	CreateGuestbookMessageInput,
+	ServerFunctionResponse,
+} from "@/types/server-functions";
 
 export async function getAllGuestbookMessages(): Promise<{
 	success: boolean;
@@ -25,7 +29,7 @@ export async function getAllGuestbookMessages(): Promise<{
 			.select()
 			.from(guestbook_message)
 			.orderBy(desc(guestbook_message.createdAt))
-			.limit(100); // Limit to prevent performance issues
+			.limit(DB_LIMITS.GUESTBOOK_MESSAGES);
 
 		return {
 			success: true,
@@ -39,11 +43,9 @@ export async function getAllGuestbookMessages(): Promise<{
 	}
 }
 
-export async function createGuestbookMessage(data: {
-	name: string;
-	message: string;
-	country: string;
-}) {
+export async function createGuestbookMessage(
+	data: CreateGuestbookMessageInput,
+): Promise<ServerFunctionResponse<GuestBookMessage>> {
 	try {
 		const { ctx } = requestInfo;
 
@@ -58,7 +60,10 @@ export async function createGuestbookMessage(data: {
 			return {
 				success: false,
 				error: "Validation failed",
-				details: validationResult.error.flatten().fieldErrors,
+				issues: validationResult.error.issues.map((issue) => ({
+					field: issue.path.join("."),
+					message: issue.message,
+				})),
 			};
 		}
 
@@ -78,10 +83,7 @@ export async function createGuestbookMessage(data: {
 			.returning();
 
 		// Trigger realtime updates for all guestbook clients
-		await renderRealtimeClients({
-			durableObjectNamespace: env.REALTIME_DURABLE_OBJECT,
-			key: "/guestbook",
-		});
+		await triggerRealtimeUpdate(REALTIME_KEYS.GUESTBOOK);
 
 		return {
 			success: true,
@@ -113,7 +115,7 @@ export async function deleteGuestbookMessage(messageId: number) {
 			.select()
 			.from(guestbook_message)
 			.where(eq(guestbook_message.id, messageId))
-			.limit(1);
+			.limit(DB_LIMITS.USER_LOOKUP);
 
 		if (!messageToDelete) {
 			return {
@@ -136,10 +138,7 @@ export async function deleteGuestbookMessage(messageId: number) {
 			.where(eq(guestbook_message.id, messageId));
 
 		// Trigger realtime updates for all guestbook clients
-		await renderRealtimeClients({
-			durableObjectNamespace: env.REALTIME_DURABLE_OBJECT,
-			key: "/guestbook",
-		});
+		await triggerRealtimeUpdate(REALTIME_KEYS.GUESTBOOK);
 
 		return {
 			success: true,
@@ -153,7 +152,9 @@ export async function deleteGuestbookMessage(messageId: number) {
 	}
 }
 
-export async function completeOnboarding(data: { name: string }) {
+export async function completeOnboarding(
+	data: CompleteOnboardingInput,
+): Promise<ServerFunctionResponse> {
 	try {
 		const { ctx } = requestInfo;
 
@@ -174,7 +175,10 @@ export async function completeOnboarding(data: { name: string }) {
 			return {
 				success: false,
 				error: "Validation failed",
-				details: validation.error.flatten().fieldErrors,
+				issues: validation.error.issues.map((issue) => ({
+					field: issue.path.join("."),
+					message: issue.message,
+				})),
 			};
 		}
 
@@ -198,4 +202,3 @@ export async function completeOnboarding(data: { name: string }) {
 		};
 	}
 }
-

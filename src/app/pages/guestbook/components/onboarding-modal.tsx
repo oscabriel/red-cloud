@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useForm } from "@tanstack/react-form";
+import { useTransition } from "react";
 
 import { Button } from "@/app/components/ui/button";
 import {
@@ -13,6 +14,8 @@ import {
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import { completeOnboarding } from "@/app/pages/guestbook/functions";
+import { FieldErrors } from "@/lib/form/utils";
+import { completeOnboardingSchema } from "@/lib/validators/guestbook";
 
 interface OnboardingModalProps {
 	isOpen: boolean;
@@ -20,46 +23,37 @@ interface OnboardingModalProps {
 }
 
 export function OnboardingModal({ isOpen, userEmail }: OnboardingModalProps) {
-	const [name, setName] = useState("");
-	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [error, setError] = useState("");
+	const [isPending, startTransition] = useTransition();
 
-	async function handleSubmit(e: React.FormEvent) {
-		e.preventDefault();
+	const form = useForm({
+		defaultValues: {
+			name: "",
+		},
+		validators: {
+			onChange: completeOnboardingSchema,
+		},
+		onSubmit: async ({ value }) => {
+			startTransition(async () => {
+				try {
+					const result = await completeOnboarding(value);
 
-		if (!name.trim()) {
-			setError("Name is required");
-			return;
-		}
+					if (result.success) {
+						// Trigger session refresh event for other components
+						window.dispatchEvent(new CustomEvent("onboarding-completed"));
+						localStorage.setItem("onboarding-completed", "true");
 
-		setIsSubmitting(true);
-		setError("");
-
-		try {
-			// Use plain object instead of FormData
-			// since rwsdk realtime client doesn't work with FormData
-			const data = {
-				name: name.trim(),
-			};
-
-			const result = await completeOnboarding(data);
-
-			if (result.success) {
-				// Trigger session refresh event for other components
-				window.dispatchEvent(new CustomEvent("onboarding-completed"));
-				localStorage.setItem("onboarding-completed", "true");
-
-				// Redirect to refresh the context and remove the modal
-				window.location.href = window.location.pathname;
-			} else {
-				setError(result.error || "Failed to update profile");
-			}
-		} catch (_err) {
-			setError("An unexpected error occurred");
-		} finally {
-			setIsSubmitting(false);
-		}
-	}
+						// Redirect to refresh the context and remove the modal
+						window.location.href = window.location.pathname;
+					} else {
+						// Error handling will be shown through field validation
+						console.error("Onboarding failed:", result.error);
+					}
+				} catch (error) {
+					console.error("Onboarding error:", error);
+				}
+			});
+		},
+	});
 
 	return (
 		<Dialog open={isOpen}>
@@ -71,7 +65,14 @@ export function OnboardingModal({ isOpen, userEmail }: OnboardingModalProps) {
 					</DialogDescription>
 				</DialogHeader>
 
-				<form onSubmit={handleSubmit} className="space-y-4">
+				<form
+					onSubmit={(e) => {
+						e.preventDefault();
+						e.stopPropagation();
+						form.handleSubmit();
+					}}
+					className="space-y-4"
+				>
 					<div className="space-y-2">
 						<Label htmlFor="email">Email</Label>
 						<Input
@@ -85,30 +86,38 @@ export function OnboardingModal({ isOpen, userEmail }: OnboardingModalProps) {
 						/>
 					</div>
 
-					<div className="space-y-2">
-						<Label htmlFor="name">Full Name *</Label>
-						<Input
-							id="name"
-							name="name"
-							type="text"
-							placeholder="Enter your full name"
-							value={name}
-							onChange={(e) => setName(e.target.value)}
-							disabled={isSubmitting}
-							required
-							autoComplete="name"
-						/>
-					</div>
+					<form.Field name="name">
+						{(field) => (
+							<div className="space-y-2">
+								<Label htmlFor={field.name}>Full Name *</Label>
+								<Input
+									id={field.name}
+									name={field.name}
+									type="text"
+									placeholder="Enter your full name"
+									value={field.state.value}
+									onChange={(e) => field.handleChange(e.target.value)}
+									onBlur={field.handleBlur}
+									disabled={isPending}
+									required
+									autoComplete="name"
+								/>
+								<FieldErrors errors={field.state.meta.errors} />
+							</div>
+						)}
+					</form.Field>
 
-					{error && <div className="text-destructive text-sm">{error}</div>}
-
-					<Button
-						type="submit"
-						className="w-full"
-						disabled={isSubmitting || !name.trim()}
-					>
-						{isSubmitting ? "Saving..." : "Complete Profile"}
-					</Button>
+					<form.Subscribe selector={(state) => [state.canSubmit]}>
+						{([canSubmit]) => (
+							<Button
+								type="submit"
+								className="w-full"
+								disabled={!canSubmit || isPending}
+							>
+								{isPending ? "Saving..." : "Complete Profile"}
+							</Button>
+						)}
+					</form.Subscribe>
 				</form>
 			</DialogContent>
 		</Dialog>

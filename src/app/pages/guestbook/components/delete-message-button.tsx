@@ -22,8 +22,6 @@ export function DeleteMessageButton({ messageId }: DeleteMessageButtonProps) {
 
 				if (result.success) {
 					toast.success(result.message || "Message deleted successfully!");
-					// Refresh the page to remove the deleted message
-					window.location.reload();
 				} else {
 					toast.error(result.error || "Failed to delete message");
 				}

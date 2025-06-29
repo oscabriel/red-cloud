@@ -1,5 +1,6 @@
 "use client";
 
+import { useForm } from "@tanstack/react-form";
 import { Pencil, Trash2, Upload } from "lucide-react";
 import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -19,6 +20,13 @@ import {
 	updateProfile,
 	uploadAvatar,
 } from "@/app/pages/profile/functions";
+import {
+	createFileFieldValue,
+	FieldErrors,
+	fileValidators,
+} from "@/lib/form/utils";
+import { FILE_UPLOAD } from "@/lib/utils/constants";
+import { updateProfileSchema } from "@/lib/validators/profile";
 
 interface EditProfileDialogProps {
 	user: {
@@ -34,71 +42,65 @@ interface EditProfileDialogProps {
 
 export function EditProfileDialog({ user }: EditProfileDialogProps) {
 	const [isOpen, setIsOpen] = useState(false);
-	const [formData, setFormData] = useState({
-		name: user.name || "",
-	});
 	const [isPending, startTransition] = useTransition();
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
-	const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-		e.preventDefault();
+	// Profile form for name editing
+	const profileForm = useForm({
+		defaultValues: {
+			name: user.name || "",
+		},
+		validators: {
+			onChange: updateProfileSchema,
+		},
+		onSubmit: async ({ value }) => {
+			startTransition(async () => {
+				const result = await updateProfile(value);
 
-		// Use plain object instead of FormData
-		// since rwsdk realtime client doesn't work with FormData
-		const data = {
-			name: formData.name,
-		};
+				if (result.success) {
+					toast.success(result.message);
+					setIsOpen(false);
+					// Realtime update will be triggered automatically by server function
+				} else {
+					toast.error(result.error);
 
-		startTransition(async () => {
-			const result = await updateProfile(data);
-
-			if (result.success) {
-				toast.success(result.message);
-				setIsOpen(false);
-				// Realtime update will be triggered automatically by server function
-			} else {
-				toast.error(result.error);
-
-				if (result.issues) {
-					for (const issue of result.issues) {
-						toast.error(`${issue.field}: ${issue.message}`);
+					if (result.issues) {
+						for (const issue of result.issues) {
+							toast.error(`${issue.field}: ${issue.message}`);
+						}
 					}
 				}
-			}
-		});
-	};
+			});
+		},
+	});
 
 	const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
 		if (!file) return;
 
-		// Add file validation on client-side
-		if (file.size > 5 * 1024 * 1024) {
-			toast.error("File size must be less than 5MB");
+		// Client-side validation using form validators
+		const sizeValidation = fileValidators.maxSize(FILE_UPLOAD.MAX_SIZE_MB)(
+			file,
+		);
+		if (sizeValidation) {
+			toast.error(sizeValidation);
 			return;
 		}
 
-		if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-			toast.error("File must be a JPEG, PNG, or WebP image");
+		const typeValidation = fileValidators.allowedTypes(
+			FILE_UPLOAD.ALLOWED_IMAGE_TYPES,
+		)(file);
+		if (typeValidation) {
+			toast.error(typeValidation);
 			return;
 		}
 
 		try {
 			// Convert File to base64 for rwsdk compatibility (JSON serializable)
-			const fileBase64 = await new Promise<string>((resolve, reject) => {
-				const reader = new FileReader();
-				reader.onload = () => {
-					const result = reader.result as string;
-					// Remove the data URL prefix (e.g., "data:image/jpeg;base64,")
-					const base64 = result.split(",")[1];
-					resolve(base64);
-				};
-				reader.onerror = reject;
-				reader.readAsDataURL(file);
-			});
+			const fileValue = await createFileFieldValue(file);
 
 			const data = {
-				fileBase64,
+				fileBase64: fileValue.base64?.split(",")[1] || "", // Remove data URL prefix
 				fileName: file.name,
 				fileType: file.type,
 				fileSize: file.size,
@@ -191,7 +193,7 @@ export function EditProfileDialog({ user }: EditProfileDialogProps) {
 							<Input
 								ref={fileInputRef}
 								type="file"
-								accept="image/jpeg,image/png,image/webp"
+								accept={FILE_UPLOAD.ALLOWED_IMAGE_TYPES.join(",")}
 								onChange={handleFileUpload}
 								className="hidden"
 								disabled={isPending}
@@ -199,23 +201,34 @@ export function EditProfileDialog({ user }: EditProfileDialogProps) {
 						</div>
 					</div>
 
-					{/* Name Form */}
-					<form onSubmit={handleSubmit} className="space-y-4">
-						<div className="space-y-2">
-							<Label htmlFor="name">Display Name</Label>
-							<Input
-								id="name"
-								name="name"
-								type="text"
-								value={formData.name}
-								onChange={(e) =>
-									setFormData((prev) => ({ ...prev, name: e.target.value }))
-								}
-								placeholder="Enter your display name"
-								disabled={isPending}
-								autoComplete="name"
-							/>
-						</div>
+					{/* Name Form using TanStack Form */}
+					<form
+						onSubmit={(e) => {
+							e.preventDefault();
+							e.stopPropagation();
+							profileForm.handleSubmit();
+						}}
+						className="space-y-4"
+					>
+						<profileForm.Field name="name">
+							{(field) => (
+								<div className="space-y-2">
+									<Label htmlFor={field.name}>Display Name</Label>
+									<Input
+										id={field.name}
+										name={field.name}
+										type="text"
+										value={field.state.value}
+										onChange={(e) => field.handleChange(e.target.value)}
+										onBlur={field.handleBlur}
+										placeholder="Enter your display name"
+										disabled={isPending}
+										autoComplete="name"
+									/>
+									<FieldErrors errors={field.state.meta.errors} />
+								</div>
+							)}
+						</profileForm.Field>
 
 						<div className="flex justify-end space-x-2">
 							<Button
@@ -226,9 +239,14 @@ export function EditProfileDialog({ user }: EditProfileDialogProps) {
 							>
 								Cancel
 							</Button>
-							<Button type="submit" disabled={isPending}>
-								{isPending ? "Saving..." : "Save Changes"}
-							</Button>
+
+							<profileForm.Subscribe selector={(state) => [state.canSubmit]}>
+								{([canSubmit]) => (
+									<Button type="submit" disabled={!canSubmit || isPending}>
+										{isPending ? "Saving..." : "Save Changes"}
+									</Button>
+								)}
+							</profileForm.Subscribe>
 						</div>
 					</form>
 				</div>

@@ -4,6 +4,19 @@ export const EMAIL_FROM_ADDRESS = "noreply@better-cloud.dev";
 // Cache refresh time for session data
 export const SESSION_CACHE_REFRESH_MS = 30_000; // 30 seconds
 
+// Database query limits
+export const DB_LIMITS = {
+	GUESTBOOK_MESSAGES: 100, // Limit to prevent performance issues
+	USER_LOOKUP: 1, // Single user queries
+} as const;
+
+// File upload constraints
+export const FILE_UPLOAD = {
+	MAX_SIZE_MB: 5,
+	MAX_SIZE_BYTES: 5 * 1024 * 1024, // 5MB in bytes
+	ALLOWED_IMAGE_TYPES: ["image/jpeg", "image/png", "image/webp"] as const,
+} as const;
+
 // Common regex patterns used across the application
 export const NAME_REGEX = /^[a-zA-Z0-9\s\-_.]+$/;
 export const MESSAGE_REGEX = /^[^<>{}]+$/;

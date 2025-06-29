@@ -1,10 +1,11 @@
 "use client";
 
+import { useForm } from "@tanstack/react-form";
 import { ExternalLink } from "lucide-react";
+import { useState, useTransition } from "react";
 
 import { Button } from "@/app/components/ui/button";
 import {
-	Form,
 	FormControl,
 	FormItem,
 	FormLabel,
@@ -16,31 +17,110 @@ import {
 	InputOTPGroup,
 	InputOTPSlot,
 } from "@/app/components/ui/input-otp";
-import { useSignInForm } from "@/app/hooks/use-sign-in-form";
 import { SocialSignInButton } from "@/app/pages/sign-in/components/social-sign-in-button";
-import { SIGN_IN_FORM, SOCIAL_PROVIDERS } from "@/lib/utils/constants";
+import { setupAuthClient } from "@/lib/auth/auth-client";
+import { FieldErrors } from "@/lib/form/utils";
+import {
+	SIGN_IN_FORM,
+	SOCIAL_PROVIDERS,
+	type SocialProvider,
+} from "@/lib/utils/constants";
+import { link } from "@/lib/utils/links";
+import { signInEmailSchema, signInOtpSchema } from "@/lib/validators/auth";
 
 interface SignInFormProps {
 	authUrl: string;
 }
 
 export function SignInForm({ authUrl }: SignInFormProps) {
-	const {
-		email,
-		setEmail,
-		otp,
-		setOtp,
-		result,
-		showOtpInput,
-		emailError,
-		otpError,
-		isPending,
-		socialProvider,
-		handleSendOtp,
-		handleVerifyOtp,
-		handleBackToEmail,
-		handleSocialSignIn,
-	} = useSignInForm({ authUrl });
+	const [isPending, startTransition] = useTransition();
+	const [showOtpInput, setShowOtpInput] = useState(false);
+	const [result, setResult] = useState("");
+	const [socialProvider, setSocialProvider] = useState<SocialProvider | null>(
+		null,
+	);
+
+	const authClient = setupAuthClient(authUrl);
+
+	// Email form for step 1
+	const emailForm = useForm({
+		defaultValues: {
+			email: "",
+		},
+		validators: {
+			onChange: signInEmailSchema,
+		},
+		onSubmit: async ({ value }) => {
+			startTransition(() => {
+				authClient.emailOtp.sendVerificationOtp(
+					{
+						email: value.email,
+						type: "sign-in",
+					},
+					{
+						onRequest: () =>
+							setResult(SIGN_IN_FORM.LOADING_MESSAGES.SENDING_OTP),
+						onSuccess: () => {
+							setShowOtpInput(true);
+							setResult(SIGN_IN_FORM.SUCCESS_MESSAGES.OTP_SENT);
+							// Set the email in the OTP form
+							otpForm.setFieldValue("email", value.email);
+						},
+						onError: (ctx) => {
+							setResult(`Error: ${ctx.error.message}`);
+						},
+					},
+				);
+			});
+		},
+	});
+
+	// OTP form for step 2
+	const otpForm = useForm({
+		defaultValues: {
+			email: "",
+			otp: "",
+		},
+		validators: {
+			onChange: signInOtpSchema,
+		},
+		onSubmit: async ({ value }) => {
+			startTransition(() => {
+				authClient.signIn.emailOtp(
+					{
+						email: value.email,
+						otp: value.otp,
+					},
+					{
+						onRequest: () =>
+							setResult(SIGN_IN_FORM.LOADING_MESSAGES.VERIFYING_OTP),
+						onSuccess: () => {
+							window.location.href = link("/guestbook");
+						},
+						onError: (ctx) => {
+							setResult(`Error: ${ctx.error.message}`);
+						},
+					},
+				);
+			});
+		},
+	});
+
+	const handleBackToEmail = () => {
+		setShowOtpInput(false);
+		setResult("");
+		otpForm.reset();
+	};
+
+	const handleSocialSignIn = (provider: SocialProvider) => {
+		setSocialProvider(provider);
+		startTransition(() => {
+			authClient.signIn.social({
+				provider,
+				callbackURL: link("/guestbook"),
+			});
+		});
+	};
 
 	return (
 		<div className="mx-auto mt-10 w-full max-w-md p-6">
@@ -51,31 +131,45 @@ export function SignInForm({ authUrl }: SignInFormProps) {
 				) : (
 					<>
 						We've sent a verification code to{" "}
-						<span className="font-medium">{email}</span>.
+						<span className="font-medium">
+							{otpForm.getFieldValue("email")}
+						</span>
+						.
 					</>
 				)}
 			</p>
 
 			{!showOtpInput ? (
 				<>
-					<Form onSubmit={handleSendOtp}>
+					<form
+						onSubmit={(e) => {
+							e.preventDefault();
+							e.stopPropagation();
+							emailForm.handleSubmit();
+						}}
+					>
 						<div className="space-y-4">
-							<FormItem>
-								<FormLabel htmlFor="email">Email</FormLabel>
-								<FormControl>
-									<Input
-										id="email"
-										name="email"
-										type="email"
-										value={email}
-										onChange={(e) => setEmail(e.target.value)}
-										placeholder="you@example.com"
-										autoComplete="email"
-										disabled={isPending}
-									/>
-								</FormControl>
-								<FormMessage>{emailError}</FormMessage>
-							</FormItem>
+							<emailForm.Field name="email">
+								{(field) => (
+									<FormItem>
+										<FormLabel htmlFor={field.name}>Email</FormLabel>
+										<FormControl>
+											<Input
+												id={field.name}
+												name={field.name}
+												type="email"
+												value={field.state.value}
+												onChange={(e) => field.handleChange(e.target.value)}
+												onBlur={field.handleBlur}
+												placeholder="you@example.com"
+												autoComplete="email"
+												disabled={isPending}
+											/>
+										</FormControl>
+										<FieldErrors errors={field.state.meta.errors} />
+									</FormItem>
+								)}
+							</emailForm.Field>
 
 							{result && (
 								<FormMessage
@@ -85,13 +179,21 @@ export function SignInForm({ authUrl }: SignInFormProps) {
 								</FormMessage>
 							)}
 
-							<Button type="submit" disabled={isPending} className="w-full">
-								{isPending
-									? SIGN_IN_FORM.LOADING_MESSAGES.SENDING_OTP
-									: "Send verification code"}
-							</Button>
+							<emailForm.Subscribe selector={(state) => [state.canSubmit]}>
+								{([canSubmit]) => (
+									<Button
+										type="submit"
+										disabled={!canSubmit || isPending}
+										className="w-full"
+									>
+										{isPending
+											? SIGN_IN_FORM.LOADING_MESSAGES.SENDING_OTP
+											: "Send verification code"}
+									</Button>
+								)}
+							</emailForm.Subscribe>
 						</div>
-					</Form>
+					</form>
 
 					<div className="relative my-6">
 						<div className="absolute inset-0 flex items-center">
@@ -123,38 +225,49 @@ export function SignInForm({ authUrl }: SignInFormProps) {
 					</div>
 				</>
 			) : (
-				<Form onSubmit={handleVerifyOtp}>
+				<form
+					onSubmit={(e) => {
+						e.preventDefault();
+						e.stopPropagation();
+						otpForm.handleSubmit();
+					}}
+				>
 					<div className="space-y-4">
-						<FormItem>
-							<FormLabel htmlFor="otp">Verification Code</FormLabel>
-							<FormControl>
-								<InputOTP
-									id="otp"
-									name="otp"
-									value={otp}
-									onChange={setOtp}
-									disabled={isPending}
-									autoComplete="one-time-code"
-									maxLength={SIGN_IN_FORM.OTP_LENGTH}
-									className="w-full"
-								>
-									<InputOTPGroup className="w-full justify-between gap-2">
-										{Array.from(
-											{ length: SIGN_IN_FORM.OTP_LENGTH },
-											(_, index) => (
-												<InputOTPSlot
-													// biome-ignore lint/suspicious/noArrayIndexKey: Index is stable for OTP slots
-													key={`otp-slot-${index}`}
-													index={index}
-													className="h-12 flex-1 rounded-md border border-input text-xl"
-												/>
-											),
-										)}
-									</InputOTPGroup>
-								</InputOTP>
-							</FormControl>
-							<FormMessage>{otpError}</FormMessage>
-						</FormItem>
+						<otpForm.Field name="otp">
+							{(field) => (
+								<FormItem>
+									<FormLabel htmlFor={field.name}>Verification Code</FormLabel>
+									<FormControl>
+										<InputOTP
+											id={field.name}
+											name={field.name}
+											value={field.state.value}
+											onChange={field.handleChange}
+											onBlur={field.handleBlur}
+											disabled={isPending}
+											autoComplete="one-time-code"
+											maxLength={SIGN_IN_FORM.OTP_LENGTH}
+											className="w-full"
+										>
+											<InputOTPGroup className="w-full justify-between gap-2">
+												{Array.from(
+													{ length: SIGN_IN_FORM.OTP_LENGTH },
+													(_, index) => (
+														<InputOTPSlot
+															// biome-ignore lint/suspicious/noArrayIndexKey: Index is stable for OTP slots
+															key={`otp-slot-${index}`}
+															index={index}
+															className="h-12 flex-1 rounded-md border border-input text-xl"
+														/>
+													),
+												)}
+											</InputOTPGroup>
+										</InputOTP>
+									</FormControl>
+									<FieldErrors errors={field.state.meta.errors} />
+								</FormItem>
+							)}
+						</otpForm.Field>
 
 						{result && (
 							<FormMessage
@@ -164,11 +277,19 @@ export function SignInForm({ authUrl }: SignInFormProps) {
 							</FormMessage>
 						)}
 
-						<Button type="submit" disabled={isPending} className="w-full">
-							{isPending
-								? SIGN_IN_FORM.LOADING_MESSAGES.VERIFYING_OTP
-								: "Verify & Sign In"}
-						</Button>
+						<otpForm.Subscribe selector={(state) => [state.canSubmit]}>
+							{([canSubmit]) => (
+								<Button
+									type="submit"
+									disabled={!canSubmit || isPending}
+									className="w-full"
+								>
+									{isPending
+										? SIGN_IN_FORM.LOADING_MESSAGES.VERIFYING_OTP
+										: "Verify & Sign In"}
+								</Button>
+							)}
+						</otpForm.Subscribe>
 
 						<Button
 							type="button"
@@ -180,7 +301,7 @@ export function SignInForm({ authUrl }: SignInFormProps) {
 							Back to Email
 						</Button>
 					</div>
-				</Form>
+				</form>
 			)}
 
 			<div className="mt-8 text-center text-muted-foreground text-sm italic">

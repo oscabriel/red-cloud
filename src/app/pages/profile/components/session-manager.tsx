@@ -1,7 +1,7 @@
 "use client";
 
 import { Laptop, Loader2, Monitor, Smartphone, Tablet } from "lucide-react";
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { UAParser } from "ua-parser-js";
 
@@ -89,6 +89,12 @@ export function SessionManager({
 
 	const authClient = setupAuthClient(authUrl);
 
+	// Memoize filtered sessions to avoid unnecessary re-filtering
+	const validSessions = useMemo(
+		() => sessions.filter((session) => session.userAgent),
+		[sessions],
+	);
+
 	const removeActiveSession = (sessionId: string) =>
 		setSessions(sessions.filter((session) => session.id !== sessionId));
 
@@ -138,46 +144,44 @@ export function SessionManager({
 	return (
 		<div className="flex w-max flex-col gap-1 border-l-2 px-2">
 			<p className="font-medium text-xs">Active Sessions</p>
-			{sessions.length === 0 ? (
+			{validSessions.length === 0 ? (
 				<p className="text-muted-foreground text-xs">
 					No active sessions found.
 				</p>
 			) : (
-				sessions
-					.filter((session) => session.userAgent)
-					.map((session) => {
-						const isCurrent = isCurrentSession(session, currentSession);
+				validSessions.map((session) => {
+					const isCurrent = isCurrentSession(session, currentSession);
 
-						return (
-							<div key={session.id}>
-								<div className="flex items-center gap-2 font-medium text-black text-sm dark:text-white">
-									{getDeviceIcon(session.userAgent)}
-									{getDeviceInfo(session.userAgent)}
-									{isCurrent && (
-										<Badge variant="default" className="text-xs">
-											Current
-										</Badge>
+					return (
+						<div key={session.id}>
+							<div className="flex items-center gap-2 font-medium text-black text-sm dark:text-white">
+								{getDeviceIcon(session.userAgent)}
+								{getDeviceInfo(session.userAgent)}
+								{isCurrent && (
+									<Badge variant="default" className="text-xs">
+										Current
+									</Badge>
+								)}
+								<Button
+									type="button"
+									variant="link"
+									size="sm"
+									className="text-red-500 text-xs"
+									onClick={() => handleSignOut(session)}
+									disabled={isPending}
+								>
+									{isTerminating === session.id ? (
+										<Loader2 size={15} className="animate-spin" />
+									) : isCurrent ? (
+										"Sign Out"
+									) : (
+										"Terminate"
 									)}
-									<Button
-										type="button"
-										variant="link"
-										size="sm"
-										className="text-red-500 text-xs"
-										onClick={() => handleSignOut(session)}
-										disabled={isPending}
-									>
-										{isTerminating === session.id ? (
-											<Loader2 size={15} className="animate-spin" />
-										) : isCurrent ? (
-											"Sign Out"
-										) : (
-											"Terminate"
-										)}
-									</Button>
-								</div>
+								</Button>
 							</div>
-						);
-					})
+						</div>
+					);
+				})
 			)}
 		</div>
 	);

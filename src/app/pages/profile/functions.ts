@@ -3,13 +3,19 @@
 import { env } from "cloudflare:workers";
 
 import { eq } from "drizzle-orm";
-import { renderRealtimeClients } from "rwsdk/realtime/worker";
 import { requestInfo } from "rwsdk/worker";
 
 import { db } from "@/db";
 import { user } from "@/db/schema/auth-schema";
 import { auth } from "@/lib/auth";
+import { DB_LIMITS, FILE_UPLOAD } from "@/lib/utils/constants";
+import { REALTIME_KEYS, triggerRealtimeUpdate } from "@/lib/utils/realtime";
 import { updateProfileSchema } from "@/lib/validators/profile";
+import type {
+	ServerFunctionResponse,
+	UpdateProfileInput,
+	UploadAvatarInput,
+} from "@/types/server-functions";
 
 export async function getUserProfile(userId: string) {
 	try {
@@ -17,7 +23,7 @@ export async function getUserProfile(userId: string) {
 			.select()
 			.from(user)
 			.where(eq(user.id, userId))
-			.limit(1);
+			.limit(DB_LIMITS.USER_LOOKUP);
 
 		if (userRecord.length === 0) {
 			throw new Error("User not found");
@@ -30,7 +36,9 @@ export async function getUserProfile(userId: string) {
 }
 
 // Server Functions
-export async function updateProfile(data: { name: string }) {
+export async function updateProfile(
+	data: UpdateProfileInput,
+): Promise<ServerFunctionResponse> {
 	try {
 		const { ctx } = requestInfo;
 
@@ -71,13 +79,10 @@ export async function updateProfile(data: { name: string }) {
 			.select()
 			.from(user)
 			.where(eq(user.id, ctx.user.id))
-			.limit(1);
+			.limit(DB_LIMITS.USER_LOOKUP);
 
 		// Trigger realtime updates for profile page
-		await renderRealtimeClients({
-			durableObjectNamespace: env.REALTIME_DURABLE_OBJECT,
-			key: "/profile",
-		});
+		await triggerRealtimeUpdate(REALTIME_KEYS.PROFILE);
 
 		// Return structured success response
 		return {
@@ -94,12 +99,9 @@ export async function updateProfile(data: { name: string }) {
 	}
 }
 
-export async function uploadAvatar(data: {
-	fileBase64: string;
-	fileName: string;
-	fileType: string;
-	fileSize: number;
-}) {
+export async function uploadAvatar(
+	data: UploadAvatarInput,
+): Promise<ServerFunctionResponse<{ avatarUrl: string }>> {
 	try {
 		const { ctx } = requestInfo;
 
@@ -121,7 +123,7 @@ export async function uploadAvatar(data: {
 		}
 
 		// Validate file data manually (since we can't use Zod with ArrayBuffer)
-		if (fileSize > 5 * 1024 * 1024) {
+		if (fileSize > FILE_UPLOAD.MAX_SIZE_BYTES) {
 			return {
 				success: false,
 				error: "File size must be less than 5MB",
@@ -169,13 +171,10 @@ export async function uploadAvatar(data: {
 			.select()
 			.from(user)
 			.where(eq(user.id, ctx.user.id))
-			.limit(1);
+			.limit(DB_LIMITS.USER_LOOKUP);
 
 		// Trigger realtime updates for profile page
-		await renderRealtimeClients({
-			durableObjectNamespace: env.REALTIME_DURABLE_OBJECT,
-			key: "/profile",
-		});
+		await triggerRealtimeUpdate(REALTIME_KEYS.PROFILE);
 
 		// Return structured success response
 		return {
@@ -193,7 +192,7 @@ export async function uploadAvatar(data: {
 	}
 }
 
-export async function removeAvatar() {
+export async function removeAvatar(): Promise<ServerFunctionResponse> {
 	try {
 		const { ctx } = requestInfo;
 
@@ -210,7 +209,7 @@ export async function removeAvatar() {
 			.select()
 			.from(user)
 			.where(eq(user.id, ctx.user.id))
-			.limit(1);
+			.limit(DB_LIMITS.USER_LOOKUP);
 
 		if (currentUser.length === 0) {
 			return {
@@ -249,13 +248,10 @@ export async function removeAvatar() {
 			.select()
 			.from(user)
 			.where(eq(user.id, ctx.user.id))
-			.limit(1);
+			.limit(DB_LIMITS.USER_LOOKUP);
 
 		// Trigger realtime updates for profile page
-		await renderRealtimeClients({
-			durableObjectNamespace: env.REALTIME_DURABLE_OBJECT,
-			key: "/profile",
-		});
+		await triggerRealtimeUpdate(REALTIME_KEYS.PROFILE);
 
 		// Return structured success response
 		return {

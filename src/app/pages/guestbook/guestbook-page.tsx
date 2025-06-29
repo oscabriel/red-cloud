@@ -23,7 +23,6 @@ export async function GuestbookPage({ ctx }: RequestInfo) {
 
 				{/* Guestbook Form */}
 				<GuestbookForm user={ctx?.user} />
-
 				{/* Messages List - Server component that will re-render on realtime updates */}
 				<GuestbookList
 					messagesResult={messagesResult}

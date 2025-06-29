@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+
 import { EditProfileDialog } from "./edit-profile-dialog";
 import {
 	Avatar,
@@ -32,8 +34,11 @@ function getInitials(name: string | null, email: string): string {
 }
 
 export function ProfileInfo({ user }: ProfileInfoProps) {
-	const initials = getInitials(user.name, user.email);
-	const avatarUrl = getAvatarUrl(user.image);
+	const initials = useMemo(
+		() => getInitials(user.name, user.email),
+		[user.name, user.email],
+	);
+	const avatarUrl = useMemo(() => getAvatarUrl(user.image), [user.image]);
 
 	return (
 		<div className="space-y-4 sm:space-y-6">
