@@ -37,10 +37,9 @@ export function FieldErrors({
 }
 
 /**
- * Converts a File to base64 string for plain object compatibility
- * Maintains existing pattern used throughout the codebase
+ * Converts a File to base64 string for form submission
  */
-export async function fileToBase64(file: File): Promise<string> {
+async function fileToBase64(file: File): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const reader = new FileReader();
 		reader.onload = () => resolve(reader.result as string);
@@ -51,41 +50,7 @@ export async function fileToBase64(file: File): Promise<string> {
 }
 
 /**
- * Prepares form state for server function submission
- * Converts TanStack Form state to plain object compatible with realtime client
- */
-export function prepareFormData(
-	formState: Record<string, unknown>,
-): Record<string, unknown> {
-	const prepared: Record<string, unknown> = {};
-
-	Object.entries(formState).forEach(([key, value]) => {
-		if (value === null || value === undefined) return;
-
-		if (
-			typeof value === "object" &&
-			value !== null &&
-			"file" in value &&
-			value.file instanceof File
-		) {
-			// Handle file uploads - use base64 for plain object compatibility
-			prepared[key] = (value as unknown as { base64: string }).base64;
-		} else if (Array.isArray(value)) {
-			// Arrays are already JSON-serializable
-			prepared[key] = value;
-		} else if (typeof value === "object" && value !== null) {
-			// Handle nested objects recursively
-			prepared[key] = prepareFormData(value as Record<string, unknown>);
-		} else {
-			prepared[key] = value;
-		}
-	});
-
-	return prepared;
-}
-
-/**
- * File validation helpers
+ * File validation helpers for avatar uploads
  */
 export const fileValidators = {
 	maxSize: (maxSizeInMB: number) => (file: File) =>
@@ -103,7 +68,7 @@ export const fileValidators = {
 } as const;
 
 /**
- * Helper to create file upload field value
+ * Helper for file upload field value with base64 conversion
  */
 export interface FileFieldValue {
 	file: File | null;

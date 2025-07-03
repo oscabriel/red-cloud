@@ -1,14 +1,23 @@
 "use server";
 
+import type { InferInsertModel } from "drizzle-orm";
 import { desc, eq, inArray } from "drizzle-orm";
 import { requestInfo } from "rwsdk/worker";
 
 import { db } from "@/db";
 import { user } from "@/db/schema/auth-schema";
-import type { CreateTaskInput, Project, Task } from "@/db/schema/tasks-schema";
+import type { Project, Task } from "@/db/schema/tasks-schema";
 import { project, task } from "@/db/schema/tasks-schema";
 import { REALTIME_KEYS, triggerRealtimeUpdate } from "@/lib/utils/realtime";
+import {
+	bulkDeleteTasksSchema,
+	createTaskSchema,
+	updateTaskSchema,
+} from "@/lib/validators/tasks";
 import type { ServerFunctionResponse } from "@/types/server-functions";
+
+// Database insert types
+type TaskInsert = InferInsertModel<typeof task>;
 
 // Task server function input types
 export interface CreateTaskServerInput {
@@ -137,34 +146,34 @@ export async function createTask(
 			};
 		}
 
-		// Validate required fields
-		if (!data.title?.trim()) {
+		// Validate input using Zod schema
+		const validationResult = createTaskSchema.safeParse(data);
+		if (!validationResult.success) {
+			const errorMessages = validationResult.error.errors.map(
+				(error) => error.message,
+			);
 			return {
 				success: false,
-				error: "Task title is required",
+				error: errorMessages.join(", "),
 			};
 		}
 
+		const validatedData = validationResult.data;
+
 		// Parse due date if provided
 		let dueDate: Date | undefined;
-		if (data.dueDate) {
-			dueDate = new Date(data.dueDate);
-			if (Number.isNaN(dueDate.getTime())) {
-				return {
-					success: false,
-					error: "Invalid due date format",
-				};
-			}
+		if (validatedData.dueDate) {
+			dueDate = new Date(validatedData.dueDate);
 		}
 
-		// Create task input with defaults
-		const taskInput: CreateTaskInput = {
-			title: data.title.trim(),
-			description: data.description?.trim() || null,
-			status: data.status || "todo",
-			priority: data.priority || "medium",
-			assigneeId: data.assigneeId || null,
-			projectId: data.projectId || null,
+		// Create task input with validated data
+		const taskInput: TaskInsert = {
+			title: validatedData.title.trim(),
+			description: validatedData.description?.trim() || null,
+			status: validatedData.status,
+			priority: validatedData.priority,
+			assigneeId: validatedData.assigneeId || null,
+			projectId: validatedData.projectId || null,
 			dueDate: dueDate || null,
 		};
 
@@ -201,18 +210,25 @@ export async function updateTask(
 			};
 		}
 
-		if (!data.id) {
+		// Validate input using Zod schema
+		const validationResult = updateTaskSchema.safeParse(data);
+		if (!validationResult.success) {
+			const errorMessages = validationResult.error.errors.map(
+				(error) => error.message,
+			);
 			return {
 				success: false,
-				error: "Task ID is required",
+				error: errorMessages.join(", "),
 			};
 		}
+
+		const validatedData = validationResult.data;
 
 		// Check if task exists
 		const existingTask = await db
 			.select()
 			.from(task)
-			.where(eq(task.id, data.id))
+			.where(eq(task.id, validatedData.id))
 			.limit(1);
 
 		if (existingTask.length === 0) {
@@ -224,38 +240,35 @@ export async function updateTask(
 
 		// Parse due date if provided
 		let dueDate: Date | null | undefined;
-		if (data.dueDate !== undefined) {
-			if (data.dueDate === "") {
+		if (validatedData.dueDate !== undefined) {
+			if (validatedData.dueDate === "") {
 				dueDate = null; // Clear due date
 			} else {
-				dueDate = new Date(data.dueDate);
-				if (Number.isNaN(dueDate.getTime())) {
-					return {
-						success: false,
-						error: "Invalid due date format",
-					};
-				}
+				dueDate = new Date(validatedData.dueDate);
 			}
 		}
 
 		// Build update object with only provided fields
-		const updateData: Partial<CreateTaskInput> = {};
-		if (data.title !== undefined) updateData.title = data.title.trim();
-		if (data.description !== undefined)
-			updateData.description = data.description?.trim() || null;
-		if (data.status !== undefined) updateData.status = data.status;
-		if (data.priority !== undefined) updateData.priority = data.priority;
-		if (data.assigneeId !== undefined)
-			updateData.assigneeId = data.assigneeId || null;
-		if (data.projectId !== undefined)
-			updateData.projectId = data.projectId || null;
+		const updateData: Partial<TaskInsert> = {};
+		if (validatedData.title !== undefined)
+			updateData.title = validatedData.title.trim();
+		if (validatedData.description !== undefined)
+			updateData.description = validatedData.description?.trim() || null;
+		if (validatedData.status !== undefined)
+			updateData.status = validatedData.status;
+		if (validatedData.priority !== undefined)
+			updateData.priority = validatedData.priority;
+		if (validatedData.assigneeId !== undefined)
+			updateData.assigneeId = validatedData.assigneeId || null;
+		if (validatedData.projectId !== undefined)
+			updateData.projectId = validatedData.projectId || null;
 		if (dueDate !== undefined) updateData.dueDate = dueDate;
 
 		// Update task in database
 		const [updatedTask] = await db
 			.update(task)
 			.set(updateData)
-			.where(eq(task.id, data.id))
+			.where(eq(task.id, validatedData.id))
 			.returning();
 
 		// Trigger realtime updates for all tasks clients
@@ -341,22 +354,29 @@ export async function bulkDeleteTasks(
 			};
 		}
 
-		if (!taskIds || taskIds.length === 0) {
+		// Validate input using Zod schema
+		const validationResult = bulkDeleteTasksSchema.safeParse({ taskIds });
+		if (!validationResult.success) {
+			const errorMessages = validationResult.error.errors.map(
+				(error) => error.message,
+			);
 			return {
 				success: false,
-				error: "No task IDs provided",
+				error: errorMessages.join(", "),
 			};
 		}
 
+		const validatedData = validationResult.data;
+
 		// Delete the tasks
-		await db.delete(task).where(inArray(task.id, taskIds));
+		await db.delete(task).where(inArray(task.id, validatedData.taskIds));
 
 		// Trigger realtime updates for all tasks clients
 		await triggerRealtimeUpdate(REALTIME_KEYS.TASKS);
 
 		return {
 			success: true,
-			message: `${taskIds.length} task${taskIds.length === 1 ? "" : "s"} deleted successfully`,
+			message: `${validatedData.taskIds.length} task${validatedData.taskIds.length === 1 ? "" : "s"} deleted successfully`,
 		};
 	} catch (error) {
 		console.error("Failed to bulk delete tasks:", error);

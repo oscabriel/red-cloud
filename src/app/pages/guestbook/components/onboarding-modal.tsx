@@ -14,7 +14,7 @@ import {
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import { completeOnboarding } from "@/app/pages/guestbook/functions";
-import { FieldErrors } from "@/lib/form/utils";
+import { FieldErrors } from "@/lib/utils/form";
 import { completeOnboardingSchema } from "@/lib/validators/guestbook";
 
 interface OnboardingModalProps {

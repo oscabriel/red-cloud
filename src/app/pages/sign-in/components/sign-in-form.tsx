@@ -19,12 +19,12 @@ import {
 } from "@/app/components/ui/input-otp";
 import { SocialSignInButton } from "@/app/pages/sign-in/components/social-sign-in-button";
 import { setupAuthClient } from "@/lib/auth/auth-client";
-import { FieldErrors } from "@/lib/form/utils";
 import {
 	SIGN_IN_FORM,
 	SOCIAL_PROVIDERS,
 	type SocialProvider,
 } from "@/lib/utils/constants";
+import { FieldErrors } from "@/lib/utils/form";
 import { link } from "@/lib/utils/links";
 import { signInEmailSchema, signInOtpSchema } from "@/lib/validators/auth";
 

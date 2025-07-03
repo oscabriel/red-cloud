@@ -20,12 +20,12 @@ import {
 	updateProfile,
 	uploadAvatar,
 } from "@/app/pages/profile/functions";
+import { FILE_UPLOAD } from "@/lib/utils/constants";
 import {
 	createFileFieldValue,
 	FieldErrors,
 	fileValidators,
-} from "@/lib/form/utils";
-import { FILE_UPLOAD } from "@/lib/utils/constants";
+} from "@/lib/utils/form";
 import { updateProfileSchema } from "@/lib/validators/profile";
 
 interface EditProfileDialogProps {

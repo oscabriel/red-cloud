@@ -1,4 +1,4 @@
-import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
+import type { InferSelectModel } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { nanoid } from "nanoid";
 
@@ -45,5 +45,3 @@ export const task = sqliteTable(
 // Type exports
 export type Task = InferSelectModel<typeof task>;
 export type Project = InferSelectModel<typeof project>;
-export type CreateTaskInput = InferInsertModel<typeof task>;
-export type CreateProjectInput = InferInsertModel<typeof project>;
