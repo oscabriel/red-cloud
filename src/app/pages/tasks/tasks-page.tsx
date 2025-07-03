@@ -1,54 +1,9 @@
 import { Suspense } from "react";
 
+import { TasksPageSkeleton } from "./components/tasks-page-skeleton";
 import { TasksTable } from "./components/tasks-table";
 import { getAllProjects, getAllTasksWithRelations } from "./functions";
 import type { AppContext } from "@/types/app";
-
-function TasksPageSkeleton() {
-	return (
-		<div className="w-full px-4">
-			<div className="space-y-4 sm:space-y-8">
-				<div className="space-y-2 text-center">
-					<div className="mx-auto h-8 w-48 animate-pulse rounded bg-muted" />
-					<div className="mx-auto h-4 w-96 animate-pulse rounded bg-muted" />
-				</div>
-				<div className="grid gap-6 md:grid-cols-2">
-					<div className="rounded-lg border bg-card p-6">
-						<div className="mb-4 h-6 w-32 animate-pulse rounded bg-muted" />
-						<div className="space-y-2">
-							{Array.from({ length: 3 }, (_, i) => i).map((id) => (
-								<div
-									key={`task-skeleton-${id}`}
-									className="rounded border bg-background p-3"
-								>
-									<div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
-									<div className="mt-2 flex gap-2">
-										<div className="h-5 w-16 animate-pulse rounded-full bg-muted" />
-										<div className="h-5 w-16 animate-pulse rounded-full bg-muted" />
-									</div>
-								</div>
-							))}
-						</div>
-					</div>
-					<div className="rounded-lg border bg-card p-6">
-						<div className="mb-4 h-6 w-32 animate-pulse rounded bg-muted" />
-						<div className="space-y-2">
-							{Array.from({ length: 3 }, (_, i) => i).map((id) => (
-								<div
-									key={`project-skeleton-${id}`}
-									className="rounded border bg-background p-3"
-								>
-									<div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
-									<div className="mt-1 h-3 w-full animate-pulse rounded bg-muted" />
-								</div>
-							))}
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	);
-}
 
 async function TasksContent() {
 	try {

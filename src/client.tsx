@@ -1,3 +1,4 @@
+import { initClientNavigation } from "rwsdk/client";
 import { initRealtimeClient } from "rwsdk/realtime/client";
 
 // Suppress hydration warnings for Radix UI ID mismatches
@@ -17,3 +18,5 @@ if (typeof window !== "undefined") {
 initRealtimeClient({
 	key: window.location.pathname,
 });
+
+initClientNavigation();
