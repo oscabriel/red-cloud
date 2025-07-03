@@ -24,7 +24,7 @@ export function Header({ ctx }: HeaderProps) {
 	const navLinks = [
 		...(ctx.user
 			? [
-					{ href: "/counter", label: "Counter" },
+					{ href: "/tasks", label: "Tasks" },
 					{ href: "/guestbook", label: "Guestbook" },
 				]
 			: []),

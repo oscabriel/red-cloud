@@ -27,4 +27,5 @@ export async function triggerRealtimeUpdate(key: string): Promise<void> {
 export const REALTIME_KEYS = {
 	GUESTBOOK: "/guestbook",
 	PROFILE: "/profile",
+	TASKS: "/tasks",
 } as const;

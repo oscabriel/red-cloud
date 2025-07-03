@@ -4,6 +4,6 @@ export const link = defineLinks([
 	"/",
 	"/sign-in",
 	"/guestbook",
-	"/counter",
+	"/tasks",
 	"/profile",
 ]);
