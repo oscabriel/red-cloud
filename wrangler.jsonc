@@ -22,10 +22,10 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_id": "8537ea42-41db-4fa8-9355-522e6c1f14cf",
+      "database_id": "1a27fa49-e317-47e1-a6c8-5bdc24367041",
       "database_name": "red-cloud-db",
       "migrations_dir": "src/db/migrations",
-      "preview_database_id": "8537ea42-41db-4fa8-9355-522e6c1f14cf"
+      "preview_database_id": "1a27fa49-e317-47e1-a6c8-5bdc24367041"
     }
   ],
   "migrations": [

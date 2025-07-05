@@ -64,6 +64,7 @@ export async function getAllTasksWithRelations(): Promise<TasksDataResponse> {
 				dueDate: task.dueDate,
 				createdAt: task.createdAt,
 				updatedAt: task.updatedAt,
+				organizationId: task.organizationId,
 				assignee: {
 					id: user.id,
 					name: user.name,
@@ -94,6 +95,7 @@ export async function getAllTasksWithRelations(): Promise<TasksDataResponse> {
 			updatedAt: row.updatedAt,
 			assignee: row.assignee?.id ? row.assignee : null,
 			project: row.project?.id ? row.project : null,
+			organizationId: row.organizationId,
 		}));
 
 		return {

@@ -1,4 +1,4 @@
-import type { User } from "@/db/schema/auth-schema";
+import type { User } from "./auth";
 
 /**
  * Application context type that defines the shape of data available

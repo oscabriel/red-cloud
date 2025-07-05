@@ -1,4 +1,4 @@
-import type { User } from "@/db/schema/auth-schema";
+import type { User } from "@/types/auth";
 
 /**
  * Checks if the given user is the current authenticated user.

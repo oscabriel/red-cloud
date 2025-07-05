@@ -1,6 +1,7 @@
 "use client";
 
 import { UserCircle } from "lucide-react";
+import { useState } from "react";
 
 import { LogoutButton } from "@/app/components/navigation/sign-out-button";
 import {
@@ -30,6 +31,7 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ ctx }: UserMenuProps) {
+	const [isOpen, setIsOpen] = useState(false);
 	// Use user from context (populated by better-auth middleware)
 	const currentUser = ctx.user;
 
@@ -41,12 +43,12 @@ export function UserMenu({ ctx }: UserMenuProps) {
 		);
 	}
 
-	const avatarUrl = getAvatarUrl(currentUser.image);
+	const avatarUrl = getAvatarUrl(currentUser.image ?? null);
 	const displayName = getUserDisplayName(currentUser);
 	const initials = getUserInitials(currentUser);
 
 	return (
-		<DropdownMenu>
+		<DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
 			<DropdownMenuTrigger asChild>
 				<Button variant="outline" size="sm" className="h-9 px-3">
 					Account
@@ -74,7 +76,7 @@ export function UserMenu({ ctx }: UserMenuProps) {
 				<DropdownMenuSeparator />
 				<DropdownMenuGroup>
 					<DropdownMenuItem asChild className="text-sm">
-						<a href="/profile">
+						<a href="/profile" onClick={() => setIsOpen(false)}>
 							<UserCircle className="mr-2 h-4 w-4" />
 							Profile
 						</a>

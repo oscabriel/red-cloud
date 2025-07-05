@@ -1,6 +1,10 @@
 export const EMAIL_FROM_NAME = "Red Cloud";
 export const EMAIL_FROM_ADDRESS = "noreply@better-cloud.dev";
 
+// Base URL constants for different environments
+export const BASE_URL_DEV = "http://localhost:5173";
+export const BASE_URL_PROD = "https://red-cloud.oscargabriel.workers.dev";
+
 // Cache refresh time for session data
 export const SESSION_CACHE_REFRESH_MS = 30_000; // 30 seconds
 

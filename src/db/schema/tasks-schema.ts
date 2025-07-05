@@ -2,18 +2,25 @@ import type { InferSelectModel } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { nanoid } from "nanoid";
 
-import { user } from "./auth-schema";
+import { organization, user } from "./auth-schema";
 
-export const project = sqliteTable("project", {
-	id: text()
-		.primaryKey()
-		.$defaultFn(() => nanoid()),
-	name: text().notNull(),
-	description: text(),
-	color: text(),
-	createdAt: integer({ mode: "timestamp" }).$defaultFn(() => new Date()),
-	updatedAt: integer({ mode: "timestamp" }).$onUpdate(() => new Date()),
-});
+export const project = sqliteTable(
+	"project",
+	{
+		id: text()
+			.primaryKey()
+			.$defaultFn(() => nanoid()),
+		name: text().notNull(),
+		description: text(),
+		color: text(),
+		organizationId: text().references(() => organization.id, {
+			onDelete: "cascade",
+		}),
+		createdAt: integer({ mode: "timestamp" }).$defaultFn(() => new Date()),
+		updatedAt: integer({ mode: "timestamp" }).$onUpdate(() => new Date()),
+	},
+	(table) => [index("project_org_idx").on(table.organizationId)],
+);
 
 export const task = sqliteTable(
 	"task",
@@ -31,6 +38,9 @@ export const task = sqliteTable(
 			.default("medium"),
 		assigneeId: text().references(() => user.id, { onDelete: "set null" }),
 		projectId: text().references(() => project.id, { onDelete: "cascade" }),
+		organizationId: text().references(() => organization.id, {
+			onDelete: "cascade",
+		}),
 		dueDate: integer({ mode: "timestamp" }),
 		createdAt: integer({ mode: "timestamp" }).$defaultFn(() => new Date()),
 		updatedAt: integer({ mode: "timestamp" }).$onUpdate(() => new Date()),
@@ -39,6 +49,7 @@ export const task = sqliteTable(
 		index("task_status_idx").on(table.status),
 		index("task_assignee_idx").on(table.assigneeId),
 		index("task_created_at_idx").on(table.createdAt),
+		index("task_org_idx").on(table.organizationId),
 	],
 );
 

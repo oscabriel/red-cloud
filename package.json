@@ -20,7 +20,8 @@
 		"db:migrate": "wrangler d1 migrations apply DB --local",
 		"db:migrate:prod": "wrangler d1 migrations apply DB --remote",
 		"db:studio": "drizzle-kit studio --config drizzle.config.ts",
-		"db:studio:prod": "NODE_ENV=production drizzle-kit studio"
+		"db:studio:prod": "bun --env-file=.env.prod drizzle-kit studio",
+		"auth:generate": "bunx @better-auth/cli@latest generate --config src/lib/auth/index.ts --output src/db/schema/auth-schema.ts"
 	},
 	"dependencies": {
 		"@biomejs/biome": "2.0.6",
@@ -61,6 +62,9 @@
 	"trustedDependencies": [
 		"@biomejs/biome",
 		"@swc/core",
-		"@tailwindcss/oxide"
+		"@tailwindcss/oxide",
+		"esbuild",
+		"sharp",
+		"workerd"
 	]
 }

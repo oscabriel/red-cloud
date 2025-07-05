@@ -93,12 +93,17 @@ export function Header({ ctx }: HeaderProps) {
 											target="_blank"
 											rel="noopener noreferrer"
 											className="flex w-full items-center gap-2 text-sm"
+											onClick={() => setIsOpen(false)}
 										>
 											{label}
 											<ExternalLink className="h-3.5 w-3.5" />
 										</a>
 									) : (
-										<a href={href} className="w-full text-sm">
+										<a
+											href={href}
+											className="w-full text-sm"
+											onClick={() => setIsOpen(false)}
+										>
 											{label}
 										</a>
 									)}
