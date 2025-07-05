@@ -76,15 +76,15 @@ export function TaskFilters({
 	};
 
 	return (
-		<div className="flex flex-wrap items-center justify-between gap-3">
-			<div className="flex items-center gap-3">
+		<div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+			<div className="flex flex-col gap-3 md:flex-1 md:flex-row md:items-center">
 				{/* Filter by title or description */}
-				<div className="relative">
+				<div className="relative w-full md:w-auto">
 					<Input
 						id={`${id}-input`}
 						ref={inputRef}
 						className={cn(
-							"peer min-w-60 ps-9",
+							"peer w-full min-w-0 ps-9 md:min-w-60",
 							Boolean(globalFilter) && "pe-9",
 						)}
 						value={globalFilter ?? ""}
@@ -112,95 +112,103 @@ export function TaskFilters({
 					)}
 				</div>
 
-				{/* Filter by status */}
-				<Popover>
-					<PopoverTrigger asChild>
-						<Button variant="outline">
-							<FilterIcon
-								className="-ms-1 opacity-60"
-								size={16}
-								aria-hidden="true"
-							/>
-							Status
-							{selectedStatuses.length > 0 && (
-								<span className="-me-1 inline-flex h-5 max-h-full items-center rounded border bg-background px-1 font-[inherit] font-medium text-[0.625rem] text-muted-foreground/70">
-									{selectedStatuses.length}
-								</span>
-							)}
-						</Button>
-					</PopoverTrigger>
-					<PopoverContent className="w-auto min-w-36 p-3" align="start">
-						<div className="space-y-3">
-							<div className="font-medium text-muted-foreground text-xs">
-								Filters
-							</div>
+				<div className="flex w-full gap-3 sm:w-auto md:w-auto">
+					{/* Filter by status */}
+					<Popover>
+						<PopoverTrigger asChild>
+							<Button
+								variant="outline"
+								className="flex-1 justify-center sm:flex-none md:flex-none"
+							>
+								<FilterIcon
+									className="-ms-1 opacity-60"
+									size={16}
+									aria-hidden="true"
+								/>
+								Status
+								{selectedStatuses.length > 0 && (
+									<span className="-me-1 inline-flex h-5 max-h-full items-center rounded border bg-background px-1 font-[inherit] font-medium text-[0.625rem] text-muted-foreground/70">
+										{selectedStatuses.length}
+									</span>
+								)}
+							</Button>
+						</PopoverTrigger>
+						<PopoverContent className="w-auto min-w-36 p-3" align="start">
 							<div className="space-y-3">
-								{statusOptions.map((value, i) => (
-									<div key={value} className="flex items-center gap-2">
-										<Checkbox
-											id={`${id}-status-${i}`}
-											checked={selectedStatuses.includes(value)}
-											onCheckedChange={(checked: boolean) =>
-												handleStatusChange(checked, value)
-											}
-										/>
-										<Label
-											htmlFor={`${id}-status-${i}`}
-											className="flex grow justify-between gap-2 font-normal"
-										>
-											<TaskStatusBadge status={value} />
-										</Label>
-									</div>
-								))}
+								<div className="font-medium text-muted-foreground text-xs">
+									Filters
+								</div>
+								<div className="space-y-3">
+									{statusOptions.map((value, i) => (
+										<div key={value} className="flex items-center gap-2">
+											<Checkbox
+												id={`${id}-status-${i}`}
+												checked={selectedStatuses.includes(value)}
+												onCheckedChange={(checked: boolean) =>
+													handleStatusChange(checked, value)
+												}
+											/>
+											<Label
+												htmlFor={`${id}-status-${i}`}
+												className="flex grow justify-between gap-2 font-normal"
+											>
+												<TaskStatusBadge status={value} />
+											</Label>
+										</div>
+									))}
+								</div>
 							</div>
-						</div>
-					</PopoverContent>
-				</Popover>
+						</PopoverContent>
+					</Popover>
 
-				{/* Filter by priority */}
-				<Popover>
-					<PopoverTrigger asChild>
-						<Button variant="outline">
-							<FilterIcon
-								className="-ms-1 opacity-60"
-								size={16}
-								aria-hidden="true"
-							/>
-							Priority
-							{selectedPriorities.length > 0 && (
-								<span className="-me-1 inline-flex h-5 max-h-full items-center rounded border bg-background px-1 font-[inherit] font-medium text-[0.625rem] text-muted-foreground/70">
-									{selectedPriorities.length}
-								</span>
-							)}
-						</Button>
-					</PopoverTrigger>
-					<PopoverContent className="w-auto min-w-36 p-3" align="start">
-						<div className="space-y-3">
-							<div className="font-medium text-muted-foreground text-xs">
-								Filters
-							</div>
+					{/* Filter by priority */}
+					<Popover>
+						<PopoverTrigger asChild>
+							<Button
+								variant="outline"
+								className="flex-1 justify-center sm:flex-none md:flex-none"
+							>
+								<FilterIcon
+									className="-ms-1 opacity-60"
+									size={16}
+									aria-hidden="true"
+								/>
+								Priority
+								{selectedPriorities.length > 0 && (
+									<span className="-me-1 inline-flex h-5 max-h-full items-center rounded border bg-background px-1 font-[inherit] font-medium text-[0.625rem] text-muted-foreground/70">
+										{selectedPriorities.length}
+									</span>
+								)}
+							</Button>
+						</PopoverTrigger>
+						<PopoverContent className="w-auto min-w-36 p-3" align="start">
 							<div className="space-y-3">
-								{priorityOptions.map((value, i) => (
-									<div key={value} className="flex items-center gap-2">
-										<Checkbox
-											id={`${id}-priority-${i}`}
-											checked={selectedPriorities.includes(value)}
-											onCheckedChange={(checked: boolean) =>
-												handlePriorityChange(checked, value)
-											}
-										/>
-										<Label
-											htmlFor={`${id}-priority-${i}`}
-											className="flex grow justify-between gap-2 font-normal"
-										>
-											<TaskPriorityBadge priority={value} />
-										</Label>
-									</div>
-								))}
+								<div className="font-medium text-muted-foreground text-xs">
+									Filters
+								</div>
+								<div className="space-y-3">
+									{priorityOptions.map((value, i) => (
+										<div key={value} className="flex items-center gap-2">
+											<Checkbox
+												id={`${id}-priority-${i}`}
+												checked={selectedPriorities.includes(value)}
+												onCheckedChange={(checked: boolean) =>
+													handlePriorityChange(checked, value)
+												}
+											/>
+											<Label
+												htmlFor={`${id}-priority-${i}`}
+												className="flex grow justify-between gap-2 font-normal"
+											>
+												<TaskPriorityBadge priority={value} />
+											</Label>
+										</div>
+									))}
+								</div>
 							</div>
-						</div>
-					</PopoverContent>
-				</Popover>
+						</PopoverContent>
+					</Popover>
+				</div>
 			</div>
 		</div>
 	);

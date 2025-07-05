@@ -357,19 +357,22 @@ export function TasksTable({ tasks }: TasksTableProps) {
 	return (
 		<div className="space-y-4">
 			{/* Filters */}
-			<div className="flex flex-wrap items-center justify-between gap-3">
+			<div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
 				<TaskFilters
 					globalFilter={globalFilter}
 					setGlobalFilter={setGlobalFilter}
 					columnFilters={columnFilters}
 					setColumnFilters={setColumnFilters}
 				/>
-				<div className="flex items-center gap-3">
+				<div className="flex w-full gap-3 sm:w-auto md:w-auto">
 					{/* Delete button */}
 					{table.getSelectedRowModel().rows.length > 0 && (
 						<AlertDialog>
 							<AlertDialogTrigger asChild>
-								<Button className="ml-auto" variant="outline">
+								<Button
+									className="flex-1 sm:flex-none md:flex-none"
+									variant="outline"
+								>
 									<TrashIcon
 										className="-ms-1 opacity-60"
 										size={16}
@@ -415,7 +418,10 @@ export function TasksTable({ tasks }: TasksTableProps) {
 					{/* Toggle columns visibility */}
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
-							<Button variant="outline">
+							<Button
+								variant="outline"
+								className="flex-1 sm:flex-none md:flex-none"
+							>
 								<Columns3Icon
 									className="-ms-1 opacity-60"
 									size={16}
@@ -447,7 +453,11 @@ export function TasksTable({ tasks }: TasksTableProps) {
 						</DropdownMenuContent>
 					</DropdownMenu>
 					{/* Add Task button */}
-					<Button className="ml-auto" variant="outline" onClick={handleAddTask}>
+					<Button
+						className="flex-1 sm:flex-none md:flex-none"
+						variant="outline"
+						onClick={handleAddTask}
+					>
 						<PlusIcon
 							className="-ms-1 opacity-60"
 							size={16}
