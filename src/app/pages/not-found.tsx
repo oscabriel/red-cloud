@@ -1,3 +1,5 @@
+import { link } from "@/lib/utils/links";
+
 export function NotFound() {
 	return (
 		<div className="flex min-h-screen items-center justify-center">
@@ -8,7 +10,7 @@ export function NotFound() {
 					The page you're looking for doesn't exist.
 				</p>
 				<a
-					href="/"
+					href={link("/")}
 					className="mt-6 inline-block rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90"
 				>
 					Go Home

@@ -3,7 +3,7 @@
   "main": "src/worker.tsx",
   "compatibility_date": "2025-06-17",
   "compatibility_flags": ["nodejs_compat"],
-  "assets": { "binding": "ASSETS", "directory": "dist/client" },
+  "assets": { "directory": "dist/client", "binding": "ASSETS" },
   "durable_objects": {
     "bindings": [
       {

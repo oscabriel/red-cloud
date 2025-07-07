@@ -8,19 +8,17 @@ import { Button } from "@/app/components/ui/button";
 import { setupAuthClient } from "@/lib/auth/auth-client";
 import { link } from "@/lib/utils/links";
 
-interface LogoutButtonProps {
+interface SignOutButtonProps {
 	className?: string;
 	authUrl: string;
 	variant?: "ghost" | "outline";
-	redirectTo?: string;
 }
 
-export function LogoutButton({
+export function SignOutButton({
 	className,
 	authUrl,
 	variant = "ghost",
-	redirectTo,
-}: LogoutButtonProps) {
+}: SignOutButtonProps) {
 	const [isPending, startTransition] = useTransition();
 	const authClient = setupAuthClient(authUrl);
 
@@ -34,8 +32,7 @@ export function LogoutButton({
 					toast.error("Failed to sign out");
 				} else {
 					toast.success("Signed out successfully");
-					// Use provided redirect or default to sign-in
-					window.location.href = redirectTo || link("/sign-in");
+					window.location.href = link("/sign-in");
 				}
 			} catch (error) {
 				console.error("Error signing out:", error);

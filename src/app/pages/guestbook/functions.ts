@@ -191,6 +191,10 @@ export async function completeOnboarding(
 			})
 			.where(eq(user.id, ctx.user.id));
 
+		// Get the current path to trigger a refresh for the current client
+		const url = new URL(requestInfo.request.url);
+		await triggerRealtimeUpdate(url.pathname);
+
 		return {
 			success: true,
 			message: "Profile completed successfully!",

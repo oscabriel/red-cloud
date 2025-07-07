@@ -202,7 +202,7 @@ src/lib/
 ### 🎯 UI/UX Enhancements
 
 **User Experience Improvements:**
-- **Onboarding Flow**: Modal-based user onboarding for better first-time experience
+- **Onboarding Flow**: Dialog-based user onboarding for better first-time experience   
 - **Toast Notifications**: Sonner integration for user feedback
 - **Loading States**: Skeleton components for better perceived performance
 - **Form Validation**: Enhanced client and server-side validation with better error messages

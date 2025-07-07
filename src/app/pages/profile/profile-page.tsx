@@ -4,7 +4,7 @@ import { DeleteAccountButton } from "./components/delete-account-button";
 import { ProfileInfo } from "./components/profile-info";
 import { SessionManager } from "./components/session-manager";
 import { getUserProfile } from "./functions";
-import { LogoutButton } from "@/app/components/navigation/sign-out-button";
+import { SignOutButton } from "@/app/components/navigation/sign-out-button";
 import { Card, CardContent } from "@/app/components/ui/card";
 import { Separator } from "@/app/components/ui/separator";
 import { auth } from "@/lib/auth";
@@ -65,10 +65,9 @@ export async function ProfilePage({ ctx, request }: RequestInfo) {
 
 						{/* Action Buttons */}
 						<div className="flex flex-col space-y-3 sm:flex-row sm:justify-between sm:space-x-3 sm:space-y-0">
-							<LogoutButton
+							<SignOutButton
 								authUrl={authUrl}
 								variant="outline"
-								redirectTo="/"
 								className="flex w-full items-center justify-center space-x-2 text-sm sm:w-auto"
 							/>
 							<DeleteAccountButton authUrl={authUrl} />

@@ -3,7 +3,7 @@
 import { UserCircle } from "lucide-react";
 import { useState } from "react";
 
-import { LogoutButton } from "@/app/components/navigation/sign-out-button";
+import { SignOutButton } from "@/app/components/navigation/sign-out-button";
 import {
 	Avatar,
 	AvatarFallback,
@@ -19,6 +19,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/app/components/ui/dropdown-menu";
+import { link } from "@/lib/utils/links";
 import {
 	getAvatarUrl,
 	getUserDisplayName,
@@ -38,7 +39,7 @@ export function UserMenu({ ctx }: UserMenuProps) {
 	if (!currentUser) {
 		return (
 			<Button variant="outline" size="sm" className="h-9 px-3" asChild>
-				<a href="/sign-in">Sign In</a>
+				<a href={link("/sign-in")}>Sign In</a>
 			</Button>
 		);
 	}
@@ -76,7 +77,7 @@ export function UserMenu({ ctx }: UserMenuProps) {
 				<DropdownMenuSeparator />
 				<DropdownMenuGroup>
 					<DropdownMenuItem asChild className="text-sm">
-						<a href="/profile" onClick={() => setIsOpen(false)}>
+						<a href={link("/profile")} onClick={() => setIsOpen(false)}>
 							<UserCircle className="mr-2 h-4 w-4" />
 							Profile
 						</a>
@@ -84,7 +85,7 @@ export function UserMenu({ ctx }: UserMenuProps) {
 				</DropdownMenuGroup>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem className="p-0">
-					<LogoutButton authUrl={ctx.authUrl} />
+					<SignOutButton authUrl={ctx.authUrl} />
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>

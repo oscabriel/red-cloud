@@ -8,6 +8,7 @@ import { UAParser } from "ua-parser-js";
 import { Badge } from "@/app/components/ui/badge";
 import { Button } from "@/app/components/ui/button";
 import { setupAuthClient } from "@/lib/auth/auth-client";
+import { link } from "@/lib/utils/links";
 
 interface SessionData {
 	id: string;
@@ -98,7 +99,7 @@ export function SessionManager({
 	const removeActiveSession = (sessionId: string) =>
 		setSessions(sessions.filter((session) => session.id !== sessionId));
 
-	const handleSignOut = (session: SessionData) => {
+	const handleSessionTerminate = (session: SessionData) => {
 		startTransition(async () => {
 			try {
 				setIsTerminating(session.id);
@@ -110,7 +111,7 @@ export function SessionManager({
 						fetchOptions: {
 							onSuccess: () => {
 								toast.success("Signed out successfully");
-								window.location.href = "/sign-in";
+								window.location.href = link("/sign-in");
 							},
 							onError: () => {
 								toast.error("Failed to sign out");
@@ -167,7 +168,7 @@ export function SessionManager({
 									variant="link"
 									size="sm"
 									className="text-red-500 text-xs"
-									onClick={() => handleSignOut(session)}
+									onClick={() => handleSessionTerminate(session)}
 									disabled={isPending}
 								>
 									{isTerminating === session.id ? (

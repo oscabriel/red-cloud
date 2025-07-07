@@ -1,3 +1,6 @@
+import { NavigationButton } from "../components/navigation/navigation-button";
+import { link } from "@/lib/utils/links";
+
 const title = `
 
  ███████████                █████      █████████  ████                          █████
@@ -47,13 +50,10 @@ export function Landing() {
 						Better-Auth
 					</a>
 				</p>
-				<div className="mt-8 space-x-4">
-					<a
-						href="/guestbook"
-						className="inline-block rounded-md bg-primary px-6 py-3 text-primary-foreground hover:bg-primary/90"
-					>
+				<div className="mt-8 flex justify-center">
+					<NavigationButton href={link("/guestbook")}>
 						Get Started
-					</a>
+					</NavigationButton>
 				</div>
 			</div>
 		</div>

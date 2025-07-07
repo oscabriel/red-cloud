@@ -17,12 +17,12 @@ import { completeOnboarding } from "@/app/pages/guestbook/functions";
 import { FieldErrors } from "@/lib/utils/form";
 import { completeOnboardingSchema } from "@/lib/validators/guestbook";
 
-interface OnboardingModalProps {
+interface OnboardingDialogProps {
 	isOpen: boolean;
 	userEmail: string;
 }
 
-export function OnboardingModal({ isOpen, userEmail }: OnboardingModalProps) {
+export function OnboardingDialog({ isOpen, userEmail }: OnboardingDialogProps) {
 	const [isPending, startTransition] = useTransition();
 
 	const form = useForm({
@@ -37,15 +37,9 @@ export function OnboardingModal({ isOpen, userEmail }: OnboardingModalProps) {
 				try {
 					const result = await completeOnboarding(value);
 
-					if (result.success) {
-						// Trigger session refresh event for other components
-						window.dispatchEvent(new CustomEvent("onboarding-completed"));
-						localStorage.setItem("onboarding-completed", "true");
-
-						// Redirect to refresh the context and remove the modal
-						window.location.href = window.location.pathname;
-					} else {
-						// Error handling will be shown through field validation
+					if (!result.success) {
+						// Error handling is shown through field validation client-side
+						// but we can also log server errors.
 						console.error("Onboarding failed:", result.error);
 					}
 				} catch (error) {
